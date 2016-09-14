@@ -1,0 +1,78 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="keyboard.js"></script>
+<style>
+:root {
+  background-color: white;
+  background-color: Window;
+  color: black;
+  color: WindowText;
+  overflow: hidden;
+  font-family: sans-serif;
+}
+
+body {
+	margin: 0px;
+	height: 100vh;
+	display:flex;
+	flex-direction: column;
+}
+
+
+.glyph {
+	font-size: 150%;
+	text-align:center;
+}
+
+#results {
+	overflow-y: auto;
+	padding: 4px;
+}
+
+.character:focus {
+	background-color: #ccc;
+}
+
+#results.compact {display: flex; flex-wrap: wrap;}
+.compact span {display:none;}
+.compact span.hexpoint {display: block;font-size: 70%;}
+.compact span.glyph {display: block;}
+.compact div {
+	margin:1px;
+	padding:1px;
+	border: 1px dotted #ccc;
+	text-align:center;
+	box-sizing:content-box;
+	min-width:5ch;
+}
+
+
+#results.details {}
+.details > div {display: table-row;}
+.details > div > span {display: table-cell;padding-right: 3px;}
+
+
+</style>
+</head>
+<body>
+  <div id="search-header">
+    <input id="unicode-char-search" placeholder="Search by name" list="suggest" size="50" type="search" />
+  </div>
+  <div id="results" class="details">
+    <div><span>Alt+L</span><span>Toggle layout</span></div>
+    <!--  <div><span>Alt+U</span><span>Close and insert first match</span></div>
+    <div><span>⏎</span><span>Insert first match</span></div>
+    <div><span>⭾ + ←↑↓→</span><span>select match by navigating result list</span></div>
+    <div><span><tt>0xHEX</tt></span><span>match by codepoint, exact match shown first</span></div>
+    -->
+    <div><span>Alt+U</span><span>Open / Close panel</span></div>
+    <div><span>Alt+S</span><span>Focus search input</span></div>
+    <div><span>⏎</span><span>Insert first match and close</span></div>
+    <div><span>Ctrl+⏎</span><span>Insert first match</span></div>
+    <div><span><tt>c:…</tt></span><span>filter by character class</span></div>
+    <div><span><tt>b:…</tt></span><span>filter by code block</span></div>
+  </div>
+</body>
+</html>
