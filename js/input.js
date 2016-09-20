@@ -20,9 +20,6 @@ class Keyboard {
     this.isOpen = true;
     this.input = input;
     
-    let start = input.selectionStart;
-    let end = input.selectionEnd;
-    
     let channel = new MessageChannel();
     
     let m = null
@@ -37,7 +34,9 @@ class Keyboard {
     frame.src = browser.extension.getURL("web/keyboard.html");
     frame.addEventListener("load", () => {
       frame.focus()
-      frame.contentWindow.postMessage("inject", "*", [channel.port1])
+      browser.storage.local.get("session-secret").then(data => {
+        frame.contentWindow.postMessage({inject: data[0]["session-secret"]}, "*", [channel.port1])
+      })
     })
     
     channel.port2.onmessage = (e) => {
@@ -50,11 +49,8 @@ class Keyboard {
 
       if("insert" in data) {
         if(m) {
-          let str = String.fromCodePoint(("0x"+ m.cp)|0);
-          input.setSelectionRange(start, end);
-          input.setRangeText(str, start, end, "end");
-          start = input.selectionStart;
-          end = input.selectionEnd;
+          let str = String.fromCodePoint(m.cp);
+          input.setRangeText(str, input.selectionStart, input.selectionEnd, "end");
         }
       }
         
@@ -70,6 +66,8 @@ class Keyboard {
       width: available;
       width: -moz-available;
       height: 50vh;
+      border: none;
+      margin: 0;
     `
       
     root.appendChild(frame)

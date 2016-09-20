@@ -1,13 +1,14 @@
 "use strict";
 
-var ucd = {chars: new Array(100000), blocks: []};
+var ucd = {chars: [], blocks: [], emoji: []};
 
 setTimeout(fetchUCD, 8000)
 
 function fetchUCD() {
   let xhr = new XMLHttpRequest();
-  xhr.open("GET", browser.runtime.getURL("web/ucd.nounihan.grouped.xml"), true)
-  xhr.responseType = "xml"
+  xhr.open("GET", browser.runtime.getURL("data/ucd.nounihan.grouped.xml"), true)
+  xhr.overrideMimeType('text/xml');
+  xhr.responseType = "document"
   xhr.addEventListener("load", (event) => {
     parseUCD(xhr.responseXML)
   })
@@ -37,19 +38,45 @@ function parseUCD(xml) {
       if(node.localName == "char") {
         let group = node.parentElement;
 
-        let charObj = {}
+        let charObj = {na: null, blk: null, gc: null, cp: -1}
         
-        for(let attr of group.attributes) {
-          charObj[attr.localName] = attr.value
+        getAndSet(charObj,  node, "na", "na")
+        getAndSet(charObj,  group, "na", "na")
+        getAndSet(charObj,  node, "na", "na1")
+        getAndSet(charObj,  group, "na", "na1")
+        
+        getAndSet(charObj,  node, "blk", "blk")
+        getAndSet(charObj,  group, "blk", "blk")
+
+        getAndSet(charObj,  node, "gc", "gc")
+        getAndSet(charObj,  group, "gc", "gc")
+        
+        charObj.na = charObj.na ? [charObj.na] : []
+        
+        for(let child of node.children) {
+          if(child.localName == "name-alias" && child.getAttribute("type") != "correction")
+            charObj.na.push(child.getAttribute("alias"))
         }
         
-        for(let attr of node.attributes) {
-          charObj[attr.localName] = attr.value
-        }
         
-        charObj._lname = (charObj.na || charObj.na1).toLowerCase();
+        
+        if(node.hasAttribute("cp"))
+          charObj.cp = parseInt(node.getAttribute("cp"), 16)
+        else if(group.hasAttribute("cp"))
+          charObj.cp = parseInt(group.getAttribute("cp"), 16)
+          
+        // some cjk characters are actually specified as ranges (first-cp/last-cp) of characters with identical metadata
+        // TODO: decompose those into individual characters instead of ignoring them
+        if(charObj.cp < 0)
+          continue;
+        
+        if(charObj.na.length == 0)
+          console.log(node)
+        
+        charObj._lname = charObj.na.map(e => e.toLowerCase()).join(" ");
         
         ucd.chars.push(charObj)
+        continue;
       }
       
       if(node.localName == "block") {
@@ -60,6 +87,7 @@ function parseUCD(xml) {
         }
         
         ucd.blocks.push(blockObj)
+        continue;
       }
     }
   }

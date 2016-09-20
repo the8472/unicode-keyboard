@@ -11,6 +11,7 @@
   color: WindowText;
   overflow: hidden;
   font-family: sans-serif;
+  border-style: none;
 }
 
 body {
@@ -19,6 +20,9 @@ body {
 	display:flex;
 	flex-direction: column;
 }
+
+#help > * {display: table-row;}
+#help > * > * {display: table-cell;}
 
 
 .glyph {
@@ -35,11 +39,24 @@ body {
 	background-color: #ccc;
 }
 
-#results.compact {display: flex; flex-wrap: wrap;}
-.compact span {display:none;}
-.compact span.hexpoint {display: block;font-size: 70%;}
-.compact span.glyph {display: block;}
-.compact div {
+.has-results #help {
+	display: none;
+}
+
+body:not(.has-results) #results {
+	display: none;
+}
+
+body:not(.has-results) #selected-details, body:not(.compact) #selected-details {
+	display: none;
+}
+
+.compact #results {display: flex; flex-wrap: wrap;}
+.compact #results .character > span {display:none;}
+.compact #results span.hexpoint {display: block;font-size: 70%;}
+.compact #results span.glyph {display: block;}
+.compact #results .character {
+	display: block;
 	margin:1px;
 	padding:1px;
 	border: 1px dotted #ccc;
@@ -49,30 +66,43 @@ body {
 }
 
 
-#results.details {}
-.details > div {display: table-row;}
-.details > div > span {display: table-cell;padding-right: 3px;}
+
+div.character {display: table-row;}
+div.character > span {display: table-cell;padding-right: 3px;}
+
+#selected-details .character > span {padding: 5px;}
+#selected-details {line-height: 1.5;} 
 
 
 </style>
+<template id="char-template">
+	<div class="character" tabindex="0">
+        <span class="hexpoint"></span>
+        <span class="glyph"></span>
+        <span class="char-name"></span>
+        <span class="blk"></span>
+        <span class="general-cat"></span>
+    </div>
+</template>
 </head>
 <body>
   <div id="search-header">
-    <input id="unicode-char-search" placeholder="Search by name" list="suggest" size="50" type="search" />
+    <input id="unicode-char-search" placeholder="Search by name" size="50" type="search" accesskey="s" />
   </div>
-  <div id="results" class="details">
+  <div id="help">
     <div><span>Alt+L</span><span>Toggle layout</span></div>
     <!--  <div><span>Alt+U</span><span>Close and insert first match</span></div>
-    <div><span>⏎</span><span>Insert first match</span></div>
-    <div><span>⭾ + ←↑↓→</span><span>select match by navigating result list</span></div>
     <div><span><tt>0xHEX</tt></span><span>match by codepoint, exact match shown first</span></div>
     -->
     <div><span>Alt+U</span><span>Open / Close panel</span></div>
-    <div><span>Alt+S</span><span>Focus search input</span></div>
+    <div><span>Alt+Shift+S</span><span>Focus search input</span></div>
     <div><span>⏎</span><span>Insert first match and close</span></div>
     <div><span>Ctrl+⏎</span><span>Insert first match</span></div>
-    <div><span><tt>c:…</tt></span><span>filter by character class</span></div>
-    <div><span><tt>b:…</tt></span><span>filter by code block</span></div>
+    <div><span>⭾ + ←↑↓→</span><span>Select match by navigating result list</span></div>
+    <div><span><tt>c:…</tt></span><span>Filter by character class</span></div>
+    <div><span><tt>b:…</tt></span><span>Filter by code block</span></div>
   </div>
+  <div id="selected-details"></div>
+  <div id="results" tabindex="-1"></div>
 </body>
 </html>
