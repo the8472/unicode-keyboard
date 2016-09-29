@@ -17,7 +17,6 @@
       return;
     
     if("top-url" in message) {
-      console.log("child url", message)
       topOrigin = new URL(message["top-url"]).origin;
     }
     
@@ -106,7 +105,6 @@
       // skip if things changed asynchronously in the meantime
       if(!el.value.startsWith(toProcess))
         return;
-      console.log(start, end, toProcess, rsp)
       el.setRangeText(rsp, 0, toProcess.length);
     })
     

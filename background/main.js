@@ -18,17 +18,14 @@ function openKeyboard() {
 function toggleLatex() {
   browser.tabs.query({currentWindow: true, active: true}).then(tabs => {
     let tab = tabs[0];
-    console.log("main tab", tab)
     let origin = new URL(tab.url).origin;
     let key = "latex|"+origin;
     
     browser.storage.local.get(key).then(data => {
-      console.log("main",data)
       let newData = {[key]: {latex: true}};
       if(data[key]) {
         newData[key].latex = !data[key].latex;
       }
-      console.log(data, newData)
       return browser.storage.local.set(newData)
     }).then(() => {
       browser.tabs.sendMessage(tab.id, {"toggleLatex": true});
