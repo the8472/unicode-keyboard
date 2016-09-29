@@ -11,6 +11,12 @@
 			"description": "Opens the input panel if a textarea is focused"
 		}
 	},
+    "icons": {
+      "48": "64.png",
+      "96": "96.png",
+      "128": "128.png"
+    },
+	
 	"background": {
 		"scripts": ["js/ucd.js","js/background.js"]
 	},
