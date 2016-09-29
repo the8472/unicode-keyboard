@@ -1,7 +1,7 @@
 {
 	"manifest_version": 2,
 	"name": "Unicode Keyboard",
-	"version": "0.2",
+	"version": "0.3",
 	"description": "A keyboard-navigable Input panel that can search unicode characters by character name, code block and general category. Focus on a text area and press Alt+U to open. Alt+U to close again.",
 	"commands": {
 		"open-keyboard": {
