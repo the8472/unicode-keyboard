@@ -1,77 +1,125 @@
 "use strict";
 
-let pagePort = null;
 let parentOrigin = null;
 
 let gridData = new WeakMap();
 
+let displayedResults;
 
-// message-origin doesn't take content script principals into account
-// -> use a custom authentication mechanism 
-window.onmessage = (e) => {
-  browser.storage.local.get("session-secret").then(data => {
-    let expect  = data[0]["session-secret"];
-    let received = e.data.inject
-    if(expect && expect === received) {
-      parentOrigin = e.origin;
-      pagePort = e.ports[0]
-      document.querySelector("#unicode-char-search").focus()
-      restore();
+class ResultSet {
+  constructor({matches, query}) {
+    this.matches = matches
+    this.query = query
+    this.gridData = new WeakMap()    
+  }
+  
+  forNode(n) {
+    return this.gridData.get(n)
+  }
+  
+  draw() {
+    let matches = this.matches;
+    
+    browser.runtime.sendMessage({broadcast: {match: matches[0]}})
+    
+    let oldGrid = document.querySelector("#results")
+    let grid = oldGrid.cloneNode();
+    let template = document.querySelector("#char-template").content.firstElementChild
+    
+    document.body.classList.toggle("has-results", matches.length > 0)
+    
+    let i = 0;
+    let batch = () => {
+      while(true) {
+        let match = matches[i]
+        let gridItem = document.importNode(template, true)
+        gridItem.querySelector(".hexpoint").textContent = match.cp.toString(16).toUpperCase();
+        gridItem.querySelector(".glyph").textContent = String.fromCodePoint(match.cp)
+        gridItem.querySelector(".char-name").textContent = match.na.join(", ");
+        gridItem.querySelector(".blk").textContent = match.blk
+        gridItem.querySelector(".general-cat").textContent = match.gc
+        this.gridData.set(gridItem, match)
+        grid.appendChild(gridItem)
+        
+        i++;
+        
+        if(i>=matches.length)
+          break;
+        
+        if(i % 1000 == 0) {
+          setTimeout(batch, 1)          
+          break;
+        }
+        
+      }
     }
-  })
-};
+    
+    batch();
+    
+    if(matches.length > 0) {
+      copyDetails(grid.firstElementChild);
+    }
+    
+    oldGrid.replaceWith(grid)
+    
+    displayedResults = this;
+  }
+  
+}
+
+displayedResults = new ResultSet({matches: [], query: ""});
+
 
 const ucdPort = browser.runtime.connect();
 
+let inFlight = false;
 
-function updateSuggetions(e) {
-  let el = this;
+function currentSearch() {
+  return document.querySelector("#unicode-char-search").value
+}
+
+function updateSuggetions() {
+  if(inFlight)
+    return;
+  
   saveState()
   
-  if(el.value == "") {
-    update([]);
+  let val = currentSearch();
+  
+  if(val  == "") {
+    processResults({matches: [], query: ""});
     return;
   }
   
-  ucdPort.postMessage({search: el.value})
+  inFlight = true;
+  
+  ucdPort.postMessage({search: val})
 }
 
 ucdPort.onMessage.addListener(function(data) {
-  if("matches" in data)
-    update(data.matches)
+  if("tabUrl" in data) {
+    parentOrigin = new URL(data.tabUrl).origin
+    restore()
+  }
+  
+  if("searchResult" in data) {
+    processResults(data.searchResult)
+  }
 })
 
-
-function update(matches) {
+function processResults(res) {
+  inFlight = false;
   
-  if(pagePort)
-    pagePort.postMessage({match: matches[0]});
-  
-  let oldGrid = document.querySelector("#results")
-  let grid = oldGrid.cloneNode();
-  let template = document.querySelector("#char-template").content.firstElementChild
-  
-  document.body.classList.toggle("has-results", matches.length > 0)
-  
-  for(let match of matches) {
+  if(displayedResults.query != res.query) {
+    let r = new ResultSet({matches: res.matches, query: res.query})
+    r.draw()
+  }
     
-    let gridItem = document.importNode(template, true)
-    gridItem.querySelector(".hexpoint").textContent = match.cp.toString(16).toUpperCase();
-    gridItem.querySelector(".glyph").textContent = String.fromCodePoint(match.cp)
-    gridItem.querySelector(".char-name").textContent = match.na.join(", ");
-    gridItem.querySelector(".blk").textContent = match.blk
-    gridItem.querySelector(".general-cat").textContent = match.gc
-    gridData.set(gridItem, match)
-    grid.appendChild(gridItem)
-  }
-  
-  if(matches.length > 0) {
-    copyDetails(grid.firstElementChild);
-  }
-  
-  oldGrid.replaceWith(grid)
-
+  let currentQuery  = currentSearch();
+  if(currentQuery != res.query)
+    updateSuggetions();  
 }
+
 
 function restore() {
   browser.storage.local.get("origin:" + parentOrigin).then(data => {
@@ -83,7 +131,7 @@ function restore() {
       return;
     input.value = data.searchValue
     toggleLayout(data.compact)
-    input.dispatchEvent(new InputEvent("input"))
+    updateSuggetions()
     
     
   })  
@@ -125,6 +173,7 @@ function copyDetails(sourceNode) {
   
 }
 
+
 function init() {
   let search = document.querySelector("#unicode-char-search")
   search.addEventListener("input", updateSuggetions)
@@ -133,12 +182,11 @@ function init() {
   
   document.documentElement.addEventListener("focus", (e) => {
     let el = e.target;
-    let data = gridData.get(el);
-    if(data && pagePort) {
-      pagePort.postMessage({match: data});
+    let data = displayedResults.forNode(el);
+    if(data) {
+      browser.runtime.sendMessage({broadcast: {match: data}})
       copyDetails(el)
     }
-      
   }, {capture: true})
   
   document.addEventListener("keydown", (e) => {
@@ -147,18 +195,22 @@ function init() {
       e.stopPropagation();
       toggleLayout();
     }
-    /*
-    if(e.altKey && e.key == "s") {
-      search.focus()
+    
+    if(e.key == "Escape") {
+      browser.runtime.sendMessage({broadcast: {restoreFocus: true}})
       e.preventDefault()
-      e.stopPropagation()
-    }*/
+    }
 
     if(e.key == "Enter") {
-      e.preventDefault();
-      pagePort.postMessage({insert: true});
+      browser.runtime.sendMessage({broadcast: {insert: true}})
       if(!e.ctrlKey)
-        pagePort.postMessage({close: true});
+        browser.runtime.sendMessage({broadcast: {close: true}})
+      e.preventDefault()
+      e.stopPropagation()
+    }
+    
+    if(e.key == " " && e.ctrlKey) {
+      browser.runtime.sendMessage({broadcast: {insert: true, restoreFocus: true}})
       e.preventDefault()
       e.stopPropagation()
     }

@@ -3,6 +3,7 @@
 var ucd = {chars: [], blocks: [], emoji: []};
 
 setTimeout(fetchUCD, 8000)
+//setTimeout(fetchEmoji, 5000)
 
 function fetchUCD() {
   let xhr = new XMLHttpRequest();
@@ -16,6 +17,33 @@ function fetchUCD() {
   xhr.send()  
 }
 
+/*
+function fetchEmoji() {
+  let a, b, c;
+  
+  a = fetch(browser.runtime.getURL("data/emoji-data.txt")).then(rsp => rsp.text()).then(parseEmoji)
+  b = fetch(browser.runtime.getURL("data/emoji-sequences.txt")).then(rsp => rsp.text()).then(parseEmoji)
+  c = fetch(browser.runtime.getURL("data/emoji-zwj-sequences.txt")).then(rsp => rsp.text()).then(parseEmoji)
+  
+  Promise.all([a,b,c]).then(parseEmoji)
+  
+}
+
+function parseEmoji(files) {
+  let lines = files.reduce((a,b) => a+"\n"+b).split("\n")
+  let sequences = [];
+  
+  
+}
+*/
+
+function getAndSet(obj, node, prop, attr) {
+  if(!node.hasAttribute(attr))
+    return;
+  let val = node.getAttribute(attr)
+  if(val.length > 0 && !obj[prop])
+    obj[prop] = val
+}
 
 function parseUCD(xml) {
   let treeWalker = xml.createTreeWalker(xml.documentElement, NodeFilter.SHOW_ELEMENT)
@@ -44,7 +72,7 @@ function parseUCD(xml) {
         getAndSet(charObj,  group, "na", "na")
         getAndSet(charObj,  node, "na", "na1")
         getAndSet(charObj,  group, "na", "na1")
-        
+
         getAndSet(charObj,  node, "blk", "blk")
         getAndSet(charObj,  group, "blk", "blk")
 
@@ -58,7 +86,7 @@ function parseUCD(xml) {
             charObj.na.push(child.getAttribute("alias"))
         }
         
-        
+
         
         if(node.hasAttribute("cp"))
           charObj.cp = parseInt(node.getAttribute("cp"), 16)

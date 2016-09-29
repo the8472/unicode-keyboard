@@ -8,7 +8,13 @@
 			"suggested_key": {
 				"default": "Alt+U"
 			},
-			"description": "Opens the input panel if a textarea is focused"
+			"description": "Toggle/Focus the input panel"
+		},
+		"latex-input": {
+			"suggested_key": {
+				"default": "Alt+Shift+L"
+			},
+			"description": "Enable latex input mode"
 		}
 	},
     "icons": {
@@ -18,17 +24,27 @@
     },
 	
 	"background": {
-		"scripts": ["js/ucd.js","js/background.js"]
+		"scripts": ["lib/latex-to-unicode.js","background/ucd.js","background/main.js"]
 	},
-	"permissions": ["storage"],
+	"permissions": ["storage", "activeTab", "tabs"],
 	"content_scripts": [
 		{
 			"matches": [
 				"<all_urls>"
 			],
 			"js": [
-				"js/input.js"
+				"content/top.js"
 			]
+		},
+		{
+			"matches": [
+				"<all_urls>"
+			],
+			"js": [
+				"content/frame.js"
+			],
+			"all_frames": true,
+			"run_at": "document_end"
 		}
 	],
 	"applications": {
